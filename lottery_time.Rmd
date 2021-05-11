@@ -1,0 +1,119 @@
+```{r}
+library(ggplot2)        # ggplot, stat_..., geom_..., etc
+library(rcompanion)
+library(MASS)
+library(scales)         # trans_format
+library(grid)
+library(dplyr)          # filter, rename, mutate, group_by, ungroup, ...
+library(jsonlite)
+library(ggridges)
+library(sqldf)
+```
+
+
+# ===Research questions===
+
+## Q1. Do people default to gist or verbatim reasoning when using visualization?
+## Q2. How does gist and verbatim reasoning with visualization influence the decisions that people make?
+## Q3. How do we elicit gist reasoning? Is time a factor in gisting?
+
+# ===Read, filter and verify data===
+
+```{r}
+data=read.csv('lottery_time.csv')
+data$string_p = as.character(data$p)
+data$time = as.character(data$time)
+data$age = as.character(data$age)
+data$x1=as.numeric(data$x1)
+data$x2=as.numeric(data$x2)
+data$p=as.numeric(data$p)
+data$p = as.numeric(data$p)
+data$abs_rrp= abs(data$rrp)
+data
+```
+
+# Demographics
+
+```{r}
+data_unique = data[!duplicated(data$postId),]
+data_unique
+```
+
+# Filter out participants who did not pass the attention check
+
+```{r}
+#attention check
+df_attention_pass=subset(data,(sheet_no=="sheet12" & (lotterychoice=="10b"| lotterychoice=="11a" )) )
+df1 <- sqldf("select postId from df_attention_pass")
+#keep only postIds in attention_pass
+data= merge(x = data, y = df1, by = "postId", all.y = TRUE)
+
+```
+
+# Demographics
+
+```{r}
+data_unique = data[!duplicated(data$postId),]
+ggplot(data_unique, aes(x=education))+ geom_bar()
+ggplot(data_unique, aes(x=gender))+ geom_bar()
+ggplot(data_unique, aes(x=age))+ geom_bar()
+```
+
+# Magnitude Estimation Bias Verbatim
+
+```{r}
+df_verbatim=subset(data,estimate=="verbatim")
+df_verbatim$estimateVal=as.numeric(df_verbatim$estimateVal)/100
+df_verbatim$error=df_verbatim$estimateVal - df_verbatim$p 
+
+df_verbatim %>%
+  ggplot(aes(y=time,
+                      x=error)) +
+  geom_density_ridges(alpha=0.5,color="steelblue",fill="steelblue") +
+  geom_vline(xintercept = 0, linetype="dotted", 
+                color = "black", size=0.5)+
+ theme(panel.background = element_blank())
+
+print(pairwise.wilcox.test(df_verbatim$error,df_verbatim$time,p.adjust.method = "bonf"))
+```
+
+# Magnitude Estimation Bias Gist
+
+```{r}
+df_gist=subset(data,estimate=="gist")
+
+df_gist$estimateVal <- factor(df_gist$estimateVal, levels=c( "no_chance","highly_unlikely","unlikely", "about_even", "likely","highly_likely","almost_certain"))
+
+df_gist %>%
+  ggplot(aes(y=estimateVal, x=p,fill=time,color=time)) +
+  geom_density_ridges(alpha=0.5) +
+ theme(panel.background = element_blank())
+
+```
+
+# RRP - default only
+
+```{r}
+df_default=subset(data,estimate=="default")
+
+df_default %>%
+  ggplot(aes(y=time, x=rrp)) +
+  geom_density_ridges(alpha=0.5,fill="steelblue",color="steelblue") +
+ theme(panel.background = element_blank())
+
+print(pairwise.wilcox.test(df_default$rrp,df_default$time,p.adjust.method = "bonf"))
+
+```
+
+# RRP - unlimited only
+
+```{r}
+df_unlimited=subset(data,time=="unlimited")
+
+ggplot(df_unlimited, aes(x=rrp)) +
+  geom_density(color="steelblue",fill="steelblue",alpha=0.5)+
+  facet_grid(estimate~.)+
+  theme(panel.background = element_blank())
+```
+
+
