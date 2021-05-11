@@ -11,13 +11,7 @@ library(sqldf)
 ```
 
 
-# ===Research questions===
-
-## Q1. Do people default to gist or verbatim reasoning when using visualization?
-## Q2. How does gist and verbatim reasoning with visualization influence the decisions that people make?
-## Q3. How do we elicit gist reasoning? Is time a factor in gisting?
-
-# ===Read, filter and verify data===
+# Read Data and change data types where necessary
 
 ```{r}
 data=read.csv('lottery_time.csv')
@@ -29,14 +23,6 @@ data$x2=as.numeric(data$x2)
 data$p=as.numeric(data$p)
 data$p = as.numeric(data$p)
 data$abs_rrp= abs(data$rrp)
-data
-```
-
-# Demographics
-
-```{r}
-data_unique = data[!duplicated(data$postId),]
-data_unique
 ```
 
 # Filter out participants who did not pass the attention check
@@ -115,5 +101,3 @@ ggplot(df_unlimited, aes(x=rrp)) +
   facet_grid(estimate~.)+
   theme(panel.background = element_blank())
 ```
-
-
